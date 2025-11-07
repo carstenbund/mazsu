@@ -60,6 +60,9 @@ window.addEventListener("DOMContentLoaded", loadConfig);
 const toggleBtn = document.getElementById('toggleConfig');
 const configContainer = document.getElementById('configContainer');
 const preview = document.getElementById('preview');
+const downloadBtn = document.getElementById('downloadBtn');
+let currentSvgBlob = null;
+let previewUrl = null;
 
 toggleBtn.addEventListener('click', () => {
   configContainer.classList.toggle('collapsed');
@@ -69,6 +72,7 @@ toggleBtn.addEventListener('click', () => {
 async function generate() {
   // Collapse UI while generating
   configContainer.classList.add('collapsed');
+  downloadBtn.disabled = true;
 
   const cfg = {
     grid: {
@@ -127,14 +131,35 @@ async function generate() {
     if (!response.ok) throw new Error("Generation failed");
 
     const svgBlob = await response.blob();
-    const url = URL.createObjectURL(svgBlob);
-    preview.src = url;
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    previewUrl = URL.createObjectURL(svgBlob);
+    preview.src = previewUrl;
+    currentSvgBlob = svgBlob;
+    downloadBtn.disabled = false;
 
   } catch (err) {
     alert(err.message);
     configContainer.classList.remove('collapsed');
+    downloadBtn.disabled = !currentSvgBlob;
   }
 }
+
+function downloadSVG() {
+  if (!currentSvgBlob) return;
+
+  const downloadUrl = URL.createObjectURL(currentSvgBlob);
+  const anchor = document.createElement('a');
+  anchor.href = downloadUrl;
+  anchor.download = 'symbolic-field.svg';
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(downloadUrl);
+}
+
+downloadBtn.addEventListener('click', downloadSVG);
 
 // --- Optional: re-expand config on edit ---
 document.getElementById("configForm").addEventListener("input", () => {

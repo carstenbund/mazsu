@@ -32,6 +32,7 @@
   .section { margin-bottom: 1em; }
   .flex-row { display: flex; flex-wrap: wrap; gap: 1em; }
   .field { display: flex; flex-direction: column; }
+  .action-buttons { margin-top: 1em; display: flex; gap: 0.5em; }
 </style>
 </head>
 <body>
@@ -185,7 +186,10 @@
     </div>
   </form>
 </div>
-<button type="button" onclick="generate()">Generate SVG</button>
+<div class="action-buttons">
+  <button type="button" onclick="generate()">Generate SVG</button>
+  <button type="button" id="downloadBtn" disabled>Download SVG</button>
+</div>
 
 <h2>Preview:</h2>
 <iframe id="preview" width="1000" height="1200"></iframe>

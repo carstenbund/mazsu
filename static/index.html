@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Symbolic Field Generator</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* Ensure basic layout works even without your CSS file */
+  body { font-family: sans-serif; padding: 20px; }
+  #toggleConfig { margin-bottom: 1em; }
+
+  /* Collapsible container */
+  #configContainer {
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+    overflow: hidden;
+    max-height: 1200px;
+    opacity: 1;
+  }
+  #configContainer.collapsed {
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #controls {
+    background: #fafafa;
+    border: 1px solid #ccc;
+    padding: 1em;
+    border-radius: 8px;
+  }
+
+  .section { margin-bottom: 1em; }
+  .flex-row { display: flex; flex-wrap: wrap; gap: 1em; }
+  .field { display: flex; flex-direction: column; }
+</style>
+</head>
+<body>
+  
+<h1>Symbolic Field Generator</h1>
+
+<button id="toggleConfig">⚙️ Show/Hide Config</button>
+
+<div id="configContainer" class="collapsed">
+  <form id="configForm">
+    <div id="controls">
+
+      <!-- GLOBAL -->
+      <div class="section">
+        <h2>Global Settings</h2>
+        <div class="flex-row wrap">
+          <div class="field"><label>Grid Size</label><input type="number" id="grid_size" value="10"></div>
+          <div class="field"><label>Width</label><input type="number" id="width" value="1000"></div>
+          <div class="field"><label>Height</label><input type="number" id="height" value="1000"></div>
+        </div>
+      </div>
+
+      <!-- GRID HEATMAP -->
+      <div class="section">
+        <h2>Heatmaps – Grid</h2>
+        <div class="flex-row wrap">
+          <div class="field">
+            <label>File</label><input type="text" id="grid_file">
+            <label class="check"><input type="checkbox" id="grid_use_perlin"> Use Perlin</label>
+          </div>
+          <div class="field">
+            <label>Mode</label>
+            <select id="grid_mode">
+              <option>replace</option><option>add</option><option>multiply</option>
+            </select>
+            <label>Perlin Scale</label><input type="number" id="grid_scale" step="0.01">
+          </div>
+          <div class="field">
+            <label>Perlin Octaves</label><input type="number" id="grid_octaves">
+          </div>
+        </div>
+      </div>
+
+      <!-- FIGURE HEATMAP -->
+      <div class="section">
+        <h2>Heatmaps – Figure</h2>
+        <div class="flex-row wrap">
+          <div class="field">
+            <label>File</label><input type="text" id="figure_file">
+            <label class="check"><input type="checkbox" id="figure_use_perlin"> Use Perlin</label>
+          </div>
+          <div class="field">
+            <label>Mode</label>
+            <select id="figure_mode">
+              <option>replace</option><option>add</option><option>multiply</option>
+            </select>
+            <label>Perlin Scale</label><input type="number" id="figure_scale" step="0.01">
+          </div>
+          <div class="field">
+            <label>Perlin Octaves</label><input type="number" id="figure_octaves">
+            <label>Palettes</label><input type="text" id="figure_palettes">
+          </div>
+        </div>
+      </div>
+
+      <!-- FIGURES -->
+      <div class="section">
+        <h2>Figures</h2>
+        <div class="flex-row wrap">
+          <div class="field">
+            <label>Scale Factor</label>
+            <input type="number" id="figure_scale_factor" step="0.01" value="0.08">
+          </div>
+        </div>
+      </div>
+
+      <button type="button" onclick="generate()">Generate SVG</button>
+    </div>
+  </form>
+</div>
+<button type="button" onclick="generate()">Generate SVG</button>
+
+<h2>Preview:</h2>
+<iframe id="preview" width="1000" height="1200"></iframe>
+
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+/* ---------- Base ---------- */
+body {
+  font-family: system-ui, sans-serif;
+  background: #f4f4f4;
+  color: #222;
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2 {
+  text-align: center;
+  color: #333;
+  margin-top: 1em;
+}
+
+/* ---------- Main Container ---------- */
+#controls {
+  background: #fff;
+  padding: 1.2em 1.5em;
+  max-width: 900px;
+  margin: 0.8em auto;
+  border-radius: 10px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.section {
+  margin-top: 1.2em;
+}
+
+.section h2 {
+  font-size: 1em;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.3em;
+  margin-bottom: 0.6em;
+  text-align: left;
+}
+
+/* ---------- Layout ---------- */
+.flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em 1em;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 180px;
+  min-width: 140px;
+  max-width: 260px;
+}
+
+/* ---------- Inputs ---------- */
+label {
+  font-weight: 600;
+  font-size: 0.85em;
+  margin-bottom: 0.2em;
+}
+
+label.check {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  gap: 0.3em;
+  margin-top: 0.3em;
+}
+
+input[type="text"],
+input[type="number"],
+select {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fafafa;
+  font-family: monospace;
+  font-size: 0.9em;
+  padding: 0.35em 0.5em;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+input[type="number"] {
+  max-width: 100px;
+}
+
+input[type="checkbox"] {
+  transform: scale(1.2);
+}
+
+/* ---------- Buttons ---------- */
+button {
+  margin-top: 1.2em;
+  padding: 0.6em 1.4em;
+  background: #0078d7;
+  border: none;
+  color: #fff;
+  font-size: 0.95em;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+button:hover {
+  background: #005fa3;
+}
+
+.center {
+  text-align: center;
+}
+
+/* ---------- Preview ---------- */
+iframe {
+  display: block;
+  margin: 1.8em auto;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  width: 95%;
+  height: 600px;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  #controls {
+    padding: 1em;
+  }
+
+  .field {
+    flex: 1 1 45%;
+    max-width: none;
+  }
+
+  input[type="number"] {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .field {
+    flex: 1 1 100%;
+  }
+
+  iframe {
+    height: 500px;
+  }
+}

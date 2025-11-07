@@ -1,0 +1,35 @@
+heatmaps:
+  grid:
+    file: "maps/grid_density.png"
+    use_perlin: false
+    mode: "add"
+    perlin_scale: 0.05
+    perlin_octaves: 3
+
+  figure:
+    file: "maps/figure_density.png"
+    use_perlin: false
+    mode: "add"
+    perlin_scale: 0.06
+    perlin_octaves: 4
+    palettes:
+      - "#E13A9D"
+      - "#3F51B5"
+      - "#000000"
+      - "#f59e0b"
+
+  shapes:
+    standing:
+      file: "maps/standing_mask.png"
+      use_perlin: true
+      mode: "add"
+    walking:
+      file: "maps/walking_mask.png"
+      use_perlin: true
+      mode: "multiply"
+      perlin_scale: 0.04
+      perlin_octaves: 2
+
+figures:
+  scale_factor: 0.08
+

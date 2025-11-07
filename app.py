@@ -91,8 +91,8 @@ def generate_svg():
     dwg = svgwrite.Drawing(out_svg, size=(f"{width}px", f"{height}px"))
     dwg.add(dwg.rect(insert=(0, 0), size=("100%", "100%"), fill="white"))
 
-    add_grid_dots(dwg, width, height, grid_size, radius=1, fill="#cccccc")
-    add_random_lines(dwg, grid_size, width, height, field=field)
+    add_grid_dots(dwg, width, height, grid_size, radius=1, fill="#cccccc", cfg=cfg)
+    add_random_lines(dwg, grid_size, width, height, field=field, cfg=cfg)
     add_figures(dwg, field, grid_size, width, height, poses_dir="poses", cfg=cfg)
     dwg.save()
 

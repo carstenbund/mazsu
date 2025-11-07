@@ -48,6 +48,21 @@ Configuration is loaded from `default_config.yaml` and deep-merged with any JSON
 | `config` | JSON object | see below | Heatmap and figure options, merged with `default_config.yaml`.
 | file uploads keyed by layer name (e.g. `grid`, `figure`) | file | — | Uploaded grayscale images replace the `file` path for the matching heatmap layer for this request.
 
+### Grid appearance (`config.grid`)
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `dot_radius` | float | `1.5` | Controls the radius of each background dot.
+| `dot_opacity` | float | `0.7` | Sets the opacity of dots (clamped in the UI between 0–1).
+| `dot_color` | string | `#cccccc` | Fill colour applied to each dot.
+| `lines.stroke_width` | float | `1.5` | Stroke width for the connective grid lines.
+| `lines.stroke_color` | string | `#222222` | Stroke colour for the lines.
+| `lines.opacity` | float | `0.8` | Opacity applied to the line strokes.
+| `lines.center_probability` | float | `0.4` | Base probability of drawing a line near the centre of the canvas.
+| `lines.edge_probability` | float | `0.05` | Line probability at the edges of the canvas.
+| `lines.diagonal_bias` | float | `0.3` | Multiplier applied when considering diagonal connections.
+| `lines.max_connections` | int | `2` | Caps how many connections any grid node may emit.
+
 ### Heatmap configuration (`config.heatmaps`)
 
 Each heatmap layer supports both image-driven and Perlin-noise-driven density maps.  Modes control how the two sources blend.
@@ -77,17 +92,17 @@ These maps override the general `figure` layer whenever a matching pose is being
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `scale_factor` | float | `0.08` | Multiplied by `grid_size` to set pose polygon scale.
+| `scale_factor` | float | `0.06` | Multiplied by `grid_size` to set pose polygon scale.
+| `amount_figures` | int | `20` | Target number of silhouettes to place (the algorithm will make several attempts to hit this count).
+| `tranparency_factor` | float | `0.8` | Opacity applied to the polygon fills (typo preserved for compatibility).
+| `line_thickness` | float | `1.5` | Outline stroke width for the polygons; set to `0` for no outline.
+| `line_color` | string | `#000000` | Stroke colour for the outlines.
+| `line_opacity` | float | `0.8` | Stroke opacity for outlines.
 
 ## Fixed behavioural parameters
 
 Some behaviours are currently hard-coded in `generator.py` and can be adjusted only by editing the source:
 
-- **Grid dots**: `add_grid_dots` places dots with radius `1` and fill `#cccccc` at every grid intersection.
-- **Line generation** (`add_random_lines`):
-  - `center_prob=0.4`, `edge_prob=0.05` control the base radial probability of drawing a line.
-  - `diagonal_bias=0.3` increases the chance of diagonal links.
-  - `max_connections=2` limits how many lines originate from a point.
 - **Figure placement** (`add_figures`):
   - Attempts up to `num_figures=40` silhouettes per render.
   - Uses `radius=3` cells when checking for overlapping figures.

@@ -1,8 +1,18 @@
+grid:
+  dot_radius: 1.5
+  dot_opacity: 0.7
+  
+  lines:
+    stroke_width: 1.5
+    stroke_color: "#222222"
+    opacity: 0.8
+    
+
 heatmaps:
   grid:
-    file: "maps/grid_density.png"
-    use_perlin: false
-    mode: "add"
+    file: "maps/grid_density.png"   # optional
+    use_perlin: false               # false | true
+    mode: "add"                     # replace | add | multiply
     perlin_scale: 0.05
     perlin_octaves: 3
 
@@ -12,11 +22,15 @@ heatmaps:
     mode: "add"
     perlin_scale: 0.06
     perlin_octaves: 4
+
+    # --- Color SECTION ---
     palettes:
-      - "#E13A9D"
-      - "#3F51B5"
-      - "#000000"
-      - "#f59e0b"
+      - "#E13A9D"  # Pink
+      - "#3F51B5"  # Blue
+      - "#000000"  # Black
+      - "#f59e0b"  # Orange
+    # ------------------------
+
 
   shapes:
     standing:
@@ -31,5 +45,9 @@ heatmaps:
       perlin_octaves: 2
 
 figures:
-  scale_factor: 0.08
-
+  scale_factor: 0.06
+  tranparency_factor: 0.8
+  amount_figures: 20
+  line_thickness: 1.5
+  
+  

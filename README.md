@@ -18,6 +18,22 @@ The web UI (served from `static/index.html`) lets you tweak heatmap options, col
 
 Generated SVGs are written to the system temp directory and streamed back to the browser.  Uploaded heatmap files are stored under `uploads/` and referenced only for the current request.
 
+## Deploying to Koyeb
+
+The project is ready to run on the [Koyeb](https://www.koyeb.com/) serverless platform using Gunicorn.  A `Procfile` and `requirements.txt` are included so Koyeb's buildpack-based builder can install dependencies and boot the app with Gunicorn bound to the platform-provided `PORT`.
+
+1. Fork this repository so you can connect it to your Koyeb account.
+2. Visit the Koyeb Control Panel and click **Create Web Service**.
+3. Choose **GitHub** as the deployment method and select your fork.
+4. In the **Builder** section, override the run command with:
+   ```bash
+   gunicorn --bind 0.0.0.0:$PORT app:app
+   ```
+   (The provided `Procfile` contains the same command if you prefer to reference it.)
+5. Pick a name for your App and Service, then click **Deploy**.
+
+Once the deployment finishes building, the application will be available at `<YOUR_APP_NAME>-<YOUR_ORG_NAME>.koyeb.app`.
+
 ## Configuration surface
 
 Configuration is loaded from `default_config.yaml` and deep-merged with any JSON provided under the `config` key of the `/generate` request.  You can pass overrides either as JSON in a POST body or by stringifying a JSON object inside `FormData` (which is what the web UI does).

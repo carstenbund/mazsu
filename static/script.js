@@ -1,8 +1,34 @@
 let currentConfig = {};
 
+function readNumber(id, parser = parseFloat) {
+  const raw = document.getElementById(id).value;
+  if (raw === "") return undefined;
+  const parsed = parser(raw);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function readText(id) {
+  const value = document.getElementById(id).value.trim();
+  return value === "" ? undefined : value;
+}
+
 async function loadConfig() {
   const res = await fetch("/get_config");
   currentConfig = await res.json();
+
+  const gridAppearance = currentConfig.grid || {};
+  document.getElementById("grid_dot_radius").value = gridAppearance.dot_radius ?? "";
+  document.getElementById("grid_dot_opacity").value = gridAppearance.dot_opacity ?? "";
+  document.getElementById("grid_dot_color").value = gridAppearance.dot_color ?? "";
+
+  const gridLines = gridAppearance.lines || {};
+  document.getElementById("grid_line_width").value = gridLines.stroke_width ?? "";
+  document.getElementById("grid_line_color").value = gridLines.stroke_color ?? "";
+  document.getElementById("grid_line_opacity").value = gridLines.opacity ?? "";
+  document.getElementById("grid_line_center_probability").value = gridLines.center_probability ?? "";
+  document.getElementById("grid_line_edge_probability").value = gridLines.edge_probability ?? "";
+  document.getElementById("grid_line_diagonal_bias").value = gridLines.diagonal_bias ?? "";
+  document.getElementById("grid_line_max_connections").value = gridLines.max_connections ?? "";
 
   const grid = currentConfig.heatmaps.grid;
   document.getElementById("grid_file").value = grid.file || "";
@@ -19,7 +45,13 @@ async function loadConfig() {
   document.getElementById("figure_octaves").value = figure.perlin_octaves;
   document.getElementById("figure_palettes").value = figure.palettes.join(", ");
 
-  document.getElementById("figure_scale_factor").value = currentConfig.figures.scale_factor;
+  const figureSettings = currentConfig.figures || {};
+  document.getElementById("figure_scale_factor").value = figureSettings.scale_factor ?? "";
+  document.getElementById("figure_amount").value = figureSettings.amount_figures ?? "";
+  document.getElementById("figure_transparency").value = figureSettings.tranparency_factor ?? "";
+  document.getElementById("figure_line_thickness").value = figureSettings.line_thickness ?? "";
+  document.getElementById("figure_line_color").value = figureSettings.line_color ?? "";
+  document.getElementById("figure_line_opacity").value = figureSettings.line_opacity ?? "";
 }
 
 window.addEventListener("DOMContentLoaded", loadConfig);
@@ -39,6 +71,20 @@ async function generate() {
   configContainer.classList.add('collapsed');
 
   const cfg = {
+    grid: {
+      dot_radius: readNumber("grid_dot_radius"),
+      dot_opacity: readNumber("grid_dot_opacity"),
+      dot_color: readText("grid_dot_color"),
+      lines: {
+        stroke_width: readNumber("grid_line_width"),
+        stroke_color: readText("grid_line_color"),
+        opacity: readNumber("grid_line_opacity"),
+        center_probability: readNumber("grid_line_center_probability"),
+        edge_probability: readNumber("grid_line_edge_probability"),
+        diagonal_bias: readNumber("grid_line_diagonal_bias"),
+        max_connections: readNumber("grid_line_max_connections", parseInt)
+      }
+    },
     heatmaps: {
       grid: {
         file: document.getElementById("grid_file").value,
@@ -57,7 +103,12 @@ async function generate() {
       }
     },
     figures: {
-      scale_factor: parseFloat(document.getElementById("figure_scale_factor").value)
+      scale_factor: readNumber("figure_scale_factor"),
+      amount_figures: readNumber("figure_amount", parseInt),
+      tranparency_factor: readNumber("figure_transparency"),
+      line_thickness: readNumber("figure_line_thickness"),
+      line_color: readText("figure_line_color"),
+      line_opacity: readNumber("figure_line_opacity")
     }
   };
 

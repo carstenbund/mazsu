@@ -138,12 +138,43 @@ def get_pixel(grid_coord, grid_size):
     return (col * grid_size, row * grid_size)
 
 # --- THIS IS THE MISSING FUNCTION ---
-def add_grid_dots(dwg, width, height, grid_size, radius=1, fill="#cccccc"):
+def add_grid_dots(
+    dwg,
+    width,
+    height,
+    grid_size,
+    radius=1,
+    fill="#cccccc",
+    cfg=None,
+):
     """Adds the background dot grid."""
     print("Adding grid dots...")
+
+    cfg = cfg or {}
+    grid_cfg = cfg.get("grid", {})
+    radius = grid_cfg.get("dot_radius", radius)
+    fill = grid_cfg.get("dot_color", fill)
+    dot_opacity = grid_cfg.get("dot_opacity", 1.0)
+
+    def _safe_float(value, default):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    radius = _safe_float(radius, 1)
+    dot_opacity = _safe_float(dot_opacity, 1.0)
+
     for x in range(0, width + 1, grid_size):
         for y in range(0, height + 1, grid_size):
-            dwg.add(dwg.circle(center=(x, y), r=radius, fill=fill))
+            dwg.add(
+                dwg.circle(
+                    center=(x, y),
+                    r=radius,
+                    fill=fill,
+                    fill_opacity=dot_opacity,
+                )
+            )
     print("Dots added.")
 
 
@@ -163,16 +194,48 @@ def calculate_spatial_probability(col, row, max_col, max_row, center_prob, edge_
 
 
 def add_random_lines(
-    dwg, grid_size, width, height,
-    center_prob=0.4, edge_prob=0.05,
-    diagonal_bias=0.3, max_connections=2,
-    field=None
+    dwg,
+    grid_size,
+    width,
+    height,
+    center_prob=0.4,
+    edge_prob=0.05,
+    diagonal_bias=0.3,
+    max_connections=2,
+    field=None,
+    cfg=None,
 ):
     """Draws random grid lines with optional heatmap modulation."""
     print("Adding limited random lines...")
     max_col = width // grid_size
     max_row = height // grid_size
-    line_style = {"stroke": "black", "stroke_width": 1}
+
+    cfg = cfg or {}
+    grid_cfg = cfg.get("grid", {})
+    line_cfg = grid_cfg.get("lines", {})
+
+    def _safe_float(value, default):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    def _safe_int(value, default):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    center_prob = _safe_float(line_cfg.get("center_probability", center_prob), center_prob)
+    edge_prob = _safe_float(line_cfg.get("edge_probability", edge_prob), edge_prob)
+    diagonal_bias = _safe_float(line_cfg.get("diagonal_bias", diagonal_bias), diagonal_bias)
+    max_connections = _safe_int(line_cfg.get("max_connections", max_connections), max_connections)
+
+    line_style = {
+        "stroke": line_cfg.get("stroke_color", "black"),
+        "stroke_width": _safe_float(line_cfg.get("stroke_width", 1), 1),
+        "stroke_opacity": _safe_float(line_cfg.get("opacity", 1.0), 1.0),
+    }
     
     connection_counts = [[0 for _ in range(max_row + 1)] for _ in range(max_col + 1)]
     
@@ -233,8 +296,17 @@ def add_random_lines(
 # --- FIGURE PLACEMENT ---------------------------------------
 # ============================================================
     
-def add_figures(dwg, field, grid_size, width, height,
-                poses_dir, num_figures=40, radius=3, cfg=None):
+def add_figures(
+    dwg,
+    field,
+    grid_size,
+    width,
+    height,
+    poses_dir,
+    num_figures=40,
+    radius=3,
+    cfg=None,
+):
     
     pose_files = list(Path(poses_dir).glob("pose_*.svg"))
     if not pose_files:
@@ -244,17 +316,32 @@ def add_figures(dwg, field, grid_size, width, height,
     max_col, max_row = width // grid_size, height // grid_size
     
     # Get figure config section
+    cfg = cfg or {}
     fig_cfg = cfg.get("heatmaps", {}).get("figure", {})
-    print(fig_cfg)
     # Load scale factor from config
-    scale_factor = (cfg.get("figures", {}).get("scale_factor", 0.3)
-                    if cfg else 0.08)
+    figure_settings = cfg.get("figures", {})
+    scale_factor = figure_settings.get("scale_factor", 0.08)
+    def _safe_int(value, default):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    def _safe_float(value, default):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    num_figures = _safe_int(figure_settings.get("amount_figures", num_figures), num_figures)
+    figure_opacity = _safe_float(figure_settings.get("tranparency_factor", 1.0), 1.0)
+    outline_thickness = _safe_float(figure_settings.get("line_thickness", 0), 0)
+    outline_color = figure_settings.get("line_color", "#000000")
+    outline_opacity = _safe_float(figure_settings.get("line_opacity", figure_opacity), figure_opacity)
     figure_scale = grid_size * scale_factor
     
     # Load palettes from config, default to black
     palettes = fig_cfg.get("palettes", ["#000000"])
-    print("paletts", palettes)
-    
     placed_count = 0
     # Try more times than num_figures to account for random misses
     for _ in range(num_figures * 10): 
@@ -299,7 +386,22 @@ def add_figures(dwg, field, grid_size, width, height,
         # --- APPLY RANDOM COLOR ---
         color = random.choice(palettes)
         #print("color: ", color)
-        dwg.add(dwg.polygon(points=pts, fill=color, opacity=1))
+        polygon_kwargs = {
+            "points": pts,
+            "fill": color,
+            "fill_opacity": figure_opacity,
+        }
+
+        if outline_thickness and outline_thickness > 0:
+            polygon_kwargs.update(
+                {
+                    "stroke": outline_color,
+                    "stroke_width": outline_thickness,
+                    "stroke_opacity": outline_opacity,
+                }
+            )
+
+        dwg.add(dwg.polygon(**polygon_kwargs))
         # --------------------------
         
         field.mark_used(col, row, radius)
@@ -335,15 +437,15 @@ if __name__ == "__main__":
     
     # --- HERE IS THE FIX ---
     # 1. Add the dots first
-    add_grid_dots(dwg, WIDTH, HEIGHT, GRID_SIZE, radius=1, fill="#cccccc")
-    
+    add_grid_dots(dwg, WIDTH, HEIGHT, GRID_SIZE, radius=1, fill="#cccccc", cfg=cfg)
+
     # 2. Add the random lines
     # These settings are now the 'base' which gets multiplied by the heatmap
     add_random_lines(dwg, GRID_SIZE, WIDTH, HEIGHT,
                     center_prob=0.8, edge_prob=0.1, # Base radial gradient
                     diagonal_bias=0.3, max_connections=2,
-                    field=field)
-    
+                    field=field, cfg=cfg)
+
     # 3. Add the figures
     add_figures(dwg, field, GRID_SIZE, WIDTH, HEIGHT,
                 poses_dir="poses", num_figures=50, radius=3, cfg=cfg)

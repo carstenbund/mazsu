@@ -16,11 +16,16 @@ This document lists configuration keys that influence the generator pipeline and
 
 | Field path | Purpose | Exposed in web UI? | Notes |
 | --- | --- | --- | --- |
-| `grid.dot_radius` | Intended radius for background dots. | No | UI never reads or writes this key; dots are drawn with a hard-coded radius instead. 【F:default_config.yaml†L1-L8】【F:generator.py†L140-L148】【F:static/script.js†L7-L62】
-| `grid.dot_opacity` | Intended opacity for background dots. | No | Not surfaced in the UI and not forwarded to the renderer yet. 【F:default_config.yaml†L1-L8】【F:static/script.js†L7-L62】
-| `grid.lines.stroke_width` | Styling for random grid lines. | No | Line drawing currently uses fixed style values. 【F:default_config.yaml†L5-L8】【F:generator.py†L165-L200】【F:static/script.js†L7-L62】
-| `grid.lines.stroke_color` | Stroke colour for grid lines. | No | Same as above. 【F:default_config.yaml†L5-L8】【F:generator.py†L165-L200】
-| `grid.lines.opacity` | Opacity for grid lines. | No | Same as above. 【F:default_config.yaml†L5-L8】【F:generator.py†L165-L200】
+| `grid.dot_radius` | Radius for background dots. | Yes | UI binds to this value and `add_grid_dots` honours it. 【F:default_config.yaml†L1-L8】【F:generator.py†L135-L154】【F:static/index.html†L61-L85】【F:static/script.js†L1-L92】
+| `grid.dot_opacity` | Opacity for background dots. | Yes | Forwarded through the UI and rendered via `fill_opacity`. 【F:default_config.yaml†L1-L8】【F:generator.py†L135-L154】【F:static/script.js†L1-L92】
+| `grid.dot_color` | Fill colour for grid dots. | Yes | New UI field writes to this key. 【F:default_config.yaml†L1-L8】【F:generator.py†L135-L154】【F:static/index.html†L61-L85】【F:static/script.js†L1-L92】
+| `grid.lines.stroke_width` | Styling for random grid lines. | Yes | Passed through to `add_random_lines`. 【F:default_config.yaml†L5-L13】【F:generator.py†L156-L205】【F:static/script.js†L93-L155】
+| `grid.lines.stroke_color` | Stroke colour for grid lines. | Yes | Same as above. 【F:default_config.yaml†L5-L13】【F:generator.py†L156-L205】
+| `grid.lines.opacity` | Opacity for grid lines. | Yes | Same as above. 【F:default_config.yaml†L5-L13】【F:generator.py†L156-L205】
+| `grid.lines.center_probability` | Base probability near the centre. | Yes | Controls line density alongside the UI slider. 【F:default_config.yaml†L5-L13】【F:generator.py†L156-L205】【F:static/index.html†L86-L111】【F:static/script.js†L93-L155】
+| `grid.lines.edge_probability` | Probability near the edges. | Yes | Same as above. 【F:default_config.yaml†L5-L13】【F:generator.py†L156-L205】【F:static/script.js†L93-L155】
+| `grid.lines.diagonal_bias` | Weighting for diagonal links. | Yes | Same as above. 【F:default_config.yaml†L5-L13】【F:generator.py†L156-L205】
+| `grid.lines.max_connections` | Max connections per node. | Yes | Same as above. 【F:default_config.yaml†L5-L13】【F:generator.py†L156-L205】
 
 ### Heatmap controls
 
@@ -47,10 +52,12 @@ This document lists configuration keys that influence the generator pipeline and
 
 | Field path | Purpose | Exposed in web UI? | Notes |
 | --- | --- | --- | --- |
-| `figures.scale_factor` | Scales the imported pose geometry. | Yes | Slider input writes to this key and `add_figures` consumes it. 【F:default_config.yaml†L47-L51】【F:static/script.js†L41-L61】【F:generator.py†L246-L307】
-| `figures.tranparency_factor` | Intended opacity modifier for figures (typo preserved). | No | Not used anywhere in the renderer or UI today. 【F:default_config.yaml†L47-L51】【F:generator.py†L246-L307】【F:static/script.js†L41-L62】
-| `figures.amount_figures` | Target number of figures to place. | No | `add_figures` still relies on its positional `num_figures` argument; the UI lacks a control. 【F:default_config.yaml†L47-L51】【F:generator.py†L236-L308】【F:static/script.js†L41-L62】
-| `figures.line_thickness` | Intended outline weight for figure paths. | No | Outlines are not currently drawn; value is unused in code and absent from the UI. 【F:default_config.yaml†L47-L51】【F:generator.py†L246-L307】【F:static/script.js†L41-L62】
+| `figures.scale_factor` | Scales the imported pose geometry. | Yes | Slider input writes to this key and `add_figures` consumes it. 【F:default_config.yaml†L47-L53】【F:static/script.js†L93-L155】【F:generator.py†L210-L307】
+| `figures.tranparency_factor` | Opacity modifier for figures (typo preserved). | Yes | Forwarded from the UI to polygon `fill_opacity`. 【F:default_config.yaml†L47-L53】【F:generator.py†L210-L307】【F:static/index.html†L118-L137】【F:static/script.js†L93-L155】
+| `figures.amount_figures` | Target number of figures to place. | Yes | Now drives the placement loop. 【F:default_config.yaml†L47-L53】【F:generator.py†L210-L307】【F:static/script.js†L93-L155】
+| `figures.line_thickness` | Outline weight for figure paths. | Yes | Applied when drawing polygons. 【F:default_config.yaml†L47-L53】【F:generator.py†L210-L307】【F:static/script.js†L93-L155】
+| `figures.line_color` | Outline colour. | Yes | New UI field writes to this key. 【F:default_config.yaml†L47-L53】【F:generator.py†L210-L307】【F:static/index.html†L118-L137】
+| `figures.line_opacity` | Outline opacity. | Yes | Applied to polygon stroke. 【F:default_config.yaml†L47-L53】【F:generator.py†L210-L307】【F:static/script.js†L93-L155】
 
 ## Next steps
 

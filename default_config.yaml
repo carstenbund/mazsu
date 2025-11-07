@@ -1,11 +1,16 @@
 grid:
   dot_radius: 1.5
   dot_opacity: 0.7
-  
+  dot_color: "#cccccc"
+
   lines:
     stroke_width: 1.5
     stroke_color: "#222222"
     opacity: 0.8
+    center_probability: 0.4
+    edge_probability: 0.05
+    diagonal_bias: 0.3
+    max_connections: 2
     
 
 heatmaps:
@@ -49,5 +54,7 @@ figures:
   tranparency_factor: 0.8
   amount_figures: 20
   line_thickness: 1.5
+  line_color: "#000000"
+  line_opacity: 0.8
   
   

@@ -146,6 +146,7 @@ def add_grid_dots(
     radius=1,
     fill="#cccccc",
     cfg=None,
+    layer=None,
 ):
     """Adds the background dot grid."""
     print("Adding grid dots...")
@@ -165,9 +166,14 @@ def add_grid_dots(
     radius = _safe_float(radius, 1)
     dot_opacity = _safe_float(dot_opacity, 1.0)
 
+    created_layer = False
+    if layer is None:
+        layer = dwg.g(id="grid")
+        created_layer = True
+
     for x in range(0, width + 1, grid_size):
         for y in range(0, height + 1, grid_size):
-            dwg.add(
+            layer.add(
                 dwg.circle(
                     center=(x, y),
                     r=radius,
@@ -175,7 +181,11 @@ def add_grid_dots(
                     fill_opacity=dot_opacity,
                 )
             )
+
+    if created_layer:
+        dwg.add(layer)
     print("Dots added.")
+    return layer
 
 
 # ============================================================
@@ -204,6 +214,7 @@ def add_random_lines(
     max_connections=2,
     field=None,
     cfg=None,
+    layer=None,
 ):
     """Draws random grid lines with optional heatmap modulation."""
     print("Adding limited random lines...")
@@ -238,7 +249,12 @@ def add_random_lines(
     }
     
     connection_counts = [[0 for _ in range(max_row + 1)] for _ in range(max_col + 1)]
-    
+
+    created_layer = False
+    if layer is None:
+        layer = dwg.g(id="lines")
+        created_layer = True
+
     for col in range(max_col + 1): # <-- Fixed loop to include last column/row
         for row in range(max_row + 1): # <-- Fixed loop
             
@@ -258,7 +274,7 @@ def add_random_lines(
                 if connection_counts[col][row] < max_connections and connection_counts[col + 1][row] < max_connections:
                     if random.random() < base_prob:
                         p_end = get_pixel((col + 1, row), grid_size)
-                        dwg.add(dwg.line(p_start, p_end, **line_style))
+                        layer.add(dwg.line(p_start, p_end, **line_style))
                         connection_counts[col][row] += 1
                         connection_counts[col + 1][row] += 1
                     
@@ -267,7 +283,7 @@ def add_random_lines(
                 if connection_counts[col][row] < max_connections and connection_counts[col][row + 1] < max_connections:
                     if random.random() < base_prob:
                         p_end = get_pixel((col, row + 1), grid_size)
-                        dwg.add(dwg.line(p_start, p_end, **line_style))
+                        layer.add(dwg.line(p_start, p_end, **line_style))
                         connection_counts[col][row] += 1
                         connection_counts[col][row + 1] += 1
                     
@@ -276,7 +292,7 @@ def add_random_lines(
                 if connection_counts[col][row] < max_connections and connection_counts[col + 1][row + 1] < max_connections:
                     if random.random() < diag_prob:
                         p_end = get_pixel((col + 1, row + 1), grid_size)
-                        dwg.add(dwg.line(p_start, p_end, **line_style))
+                        layer.add(dwg.line(p_start, p_end, **line_style))
                         connection_counts[col][row] += 1
                         connection_counts[col + 1][row + 1] += 1
                     
@@ -285,11 +301,14 @@ def add_random_lines(
                 if connection_counts[col][row] < max_connections and connection_counts[col + 1][row - 1] < max_connections:
                     if random.random() < diag_prob:
                         p_end = get_pixel((col + 1, row - 1), grid_size)
-                        dwg.add(dwg.line(p_start, p_end, **line_style))
+                        layer.add(dwg.line(p_start, p_end, **line_style))
                         connection_counts[col][row] += 1
                         connection_counts[col + 1][row - 1] += 1
                     
+    if created_layer:
+        dwg.add(layer)
     print("Lines added.")
+    return layer
     
     
 # ============================================================
@@ -306,6 +325,7 @@ def add_figures(
     num_figures=40,
     radius=3,
     cfg=None,
+    layer=None,
 ):
     
     pose_files = list(Path(poses_dir).glob("pose_*.svg"))
@@ -344,7 +364,12 @@ def add_figures(
     palettes = fig_cfg.get("palettes", ["#000000"])
     placed_count = 0
     # Try more times than num_figures to account for random misses
-    for _ in range(num_figures * 10): 
+    created_layer = False
+    if layer is None:
+        layer = dwg.g(id="figures")
+        created_layer = True
+
+    for _ in range(num_figures * 10):
         if placed_count >= num_figures: break
 
         shape_file = random.choice(pose_files)
@@ -401,13 +426,16 @@ def add_figures(
                 }
             )
 
-        dwg.add(dwg.polygon(**polygon_kwargs))
+        layer.add(dwg.polygon(**polygon_kwargs))
         # --------------------------
         
         field.mark_used(col, row, radius)
         placed_count += 1
         
+    if created_layer:
+        dwg.add(layer)
     print(f"Placed {placed_count} figures (tried for {num_figures}).")
+    return layer
     
     
 # ============================================================

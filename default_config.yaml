@@ -51,7 +51,7 @@ heatmaps:
 
 figures:
   scale_factor: 0.06
-  tranparency_factor: 0.8
+  tranparency_factor: 0.6
   amount_figures: 20
   line_thickness: 1.5
   line_color: "#000000"

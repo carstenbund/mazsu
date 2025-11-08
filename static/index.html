@@ -146,7 +146,11 @@
           </div>
           <div class="field">
             <label>Perlin Octaves</label><input type="number" id="figure_octaves">
-            <label>Palettes</label><input type="text" id="figure_palettes">
+            <label>Palettes</label>
+            <div class="palette-controls">
+              <div id="paletteList" class="palette-list" aria-live="polite"></div>
+              <button type="button" id="addPaletteColor" class="palette-add">Add Color</button>
+            </div>
           </div>
         </div>
       </div>

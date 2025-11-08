@@ -20,17 +20,52 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def load_yaml_file(path):
     if os.path.exists(path):
-        with open(path, "r") as f:
-            return yaml.safe_load(f) or {}
+        try:
+            with open(path, "r") as f:
+                data = yaml.safe_load(f)
+        except yaml.YAMLError as exc:
+            print(f"Failed to parse YAML from {path}: {exc}")
+            return {}
+        if isinstance(data, dict):
+            return data
+        return {}
     return {}
+
+
+def write_yaml_file(path, data):
+    """Atomically write YAML data to disk."""
+    abs_path = os.path.abspath(path)
+    target_dir = os.path.dirname(abs_path) or "."
+    fd, tmp_path = tempfile.mkstemp(dir=target_dir, prefix=".tmp_cfg_", suffix=".yaml")
+    try:
+        with os.fdopen(fd, "w") as tmp:
+            yaml.safe_dump(data or {}, tmp, sort_keys=False)
+        os.replace(tmp_path, abs_path)
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 
 def ensure_active_config():
     """Ensure the active config exists by seeding it from defaults if needed."""
+    needs_seed = False
     if not os.path.exists(ACTIVE_CONFIG_PATH):
+        needs_seed = True
+    else:
+        try:
+            if os.path.getsize(ACTIVE_CONFIG_PATH) == 0:
+                needs_seed = True
+        except OSError:
+            needs_seed = True
+
+        if not needs_seed:
+            cfg = load_yaml_file(ACTIVE_CONFIG_PATH)
+            if not isinstance(cfg, dict) or not cfg:
+                needs_seed = True
+
+    if needs_seed:
         cfg = load_yaml_file(DEFAULT_CONFIG_PATH)
-        with open(ACTIVE_CONFIG_PATH, "w") as f:
-            yaml.safe_dump(cfg or {}, sort_keys=False)
+        write_yaml_file(ACTIVE_CONFIG_PATH, cfg or {})
 
 
 def deep_merge(a, b):
@@ -68,8 +103,7 @@ def save_config():
 
     merged_cfg = deep_merge(existing_cfg, cfg)
 
-    with open(ACTIVE_CONFIG_PATH, "w") as f:
-        yaml.safe_dump(merged_cfg, sort_keys=False)
+    write_yaml_file(ACTIVE_CONFIG_PATH, merged_cfg)
 
     return jsonify({"status": "ok"})
 
@@ -77,8 +111,7 @@ def save_config():
 @app.route("/get_defaults", methods=["POST"])
 def get_defaults():
     cfg = load_yaml_file(DEFAULT_CONFIG_PATH)
-    with open(ACTIVE_CONFIG_PATH, "w") as f:
-        yaml.safe_dump(cfg or {}, sort_keys=False)
+    write_yaml_file(ACTIVE_CONFIG_PATH, cfg or {})
     return jsonify(cfg or {})
 
 

@@ -308,10 +308,117 @@ async function loadDefaults() {
 // --- Toggle / collapse setup ---
 const toggleBtn = document.getElementById('toggleConfig');
 const configContainer = document.getElementById('configContainer');
-const preview = document.getElementById('preview');
+const previewContainer = document.getElementById('previewContainer');
 const downloadBtn = document.getElementById('downloadBtn');
 let currentSvgBlob = null;
-let previewUrl = null;
+
+const dragState = {
+  element: null,
+  pointerId: null,
+  baseTransform: '',
+  start: { x: 0, y: 0 },
+  svg: null
+};
+
+function getSvgCoordinates(svg, event) {
+  if (!svg || typeof svg.createSVGPoint !== 'function') {
+    return { x: event.offsetX ?? 0, y: event.offsetY ?? 0 };
+  }
+  const point = svg.createSVGPoint();
+  point.x = event.clientX;
+  point.y = event.clientY;
+  const ctm = svg.getScreenCTM();
+  if (!ctm) {
+    return { x: point.x, y: point.y };
+  }
+  return point.matrixTransform(ctm.inverse());
+}
+
+function onDragPointerDown(event) {
+  if (event.button !== undefined && event.button !== 0) return;
+  const target = event.currentTarget;
+  const svg = target?.ownerSVGElement;
+  if (!svg) return;
+
+  dragState.element = target;
+  dragState.pointerId = event.pointerId;
+  dragState.baseTransform = target.getAttribute('transform') || '';
+  dragState.start = getSvgCoordinates(svg, event);
+  dragState.svg = svg;
+
+  target.style.cursor = 'grabbing';
+  target.style.touchAction = 'none';
+  target.setPointerCapture?.(event.pointerId);
+
+  event.preventDefault();
+}
+
+function onDragPointerMove(event) {
+  if (!dragState.element || dragState.pointerId !== event.pointerId) return;
+  if (event.currentTarget !== dragState.element) return;
+  const svg = dragState.svg;
+  if (!svg) return;
+
+  const position = getSvgCoordinates(svg, event);
+  const dx = position.x - dragState.start.x;
+  const dy = position.y - dragState.start.y;
+  const translate = `translate(${dx.toFixed(2)} ${dy.toFixed(2)})`;
+  const base = dragState.baseTransform.trim();
+  const transformValue = base ? `${base} ${translate}` : translate;
+  dragState.element.setAttribute('transform', transformValue.trim());
+
+  event.preventDefault();
+}
+
+function endDrag(event) {
+  if (!dragState.element || dragState.pointerId !== event.pointerId) return;
+  if (event.currentTarget !== dragState.element) return;
+
+  dragState.element.releasePointerCapture?.(event.pointerId);
+  dragState.element.style.cursor = 'move';
+
+  dragState.element = null;
+  dragState.pointerId = null;
+  dragState.baseTransform = '';
+  dragState.start = { x: 0, y: 0 };
+  dragState.svg = null;
+
+  event.preventDefault();
+}
+
+function setupDraggableFigures(svg) {
+  const draggableShapes = svg?.querySelectorAll('#figures *');
+  if (!draggableShapes || !draggableShapes.length) {
+    return;
+  }
+
+  draggableShapes.forEach((shape) => {
+    shape.style.cursor = 'move';
+    shape.style.touchAction = 'none';
+    shape.addEventListener('pointerdown', onDragPointerDown);
+    shape.addEventListener('pointermove', onDragPointerMove);
+    shape.addEventListener('pointerup', endDrag);
+    shape.addEventListener('pointercancel', endDrag);
+  });
+}
+
+function renderInlineSvg(svgText) {
+  const sanitized = svgText
+    .replace(/<\?xml[^>]*\?>/gi, '')
+    .replace(/<!DOCTYPE[^>]*>/gi, '')
+    .trim();
+  if (!sanitized) {
+    previewContainer.textContent = 'Unable to display SVG preview.';
+    return;
+  }
+  previewContainer.innerHTML = sanitized;
+  const svgElement = previewContainer.querySelector('svg');
+  if (!svgElement) {
+    previewContainer.textContent = 'Unable to display SVG preview.';
+    return;
+  }
+  setupDraggableFigures(svgElement);
+}
 
 function openHeatmapPreview(targetId) {
   const input = document.getElementById(targetId);
@@ -343,6 +450,7 @@ async function generate() {
   // Collapse UI while generating
   configContainer.classList.add('collapsed');
   downloadBtn.disabled = true;
+  previewContainer.textContent = 'Generating preview…';
 
   await flushPendingSave();
 
@@ -362,17 +470,17 @@ async function generate() {
 
     if (!response.ok) throw new Error("Generation failed");
 
-    const svgBlob = await response.blob();
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    previewUrl = URL.createObjectURL(svgBlob);
-    preview.src = previewUrl;
+    const responseClone = response.clone();
+    const svgText = await response.text();
+    const svgBlob = await responseClone.blob();
+
+    renderInlineSvg(svgText);
     currentSvgBlob = svgBlob;
     downloadBtn.disabled = false;
 
   } catch (err) {
     alert(err.message);
+    previewContainer.textContent = 'Preview unavailable.';
     configContainer.classList.remove('collapsed');
     downloadBtn.disabled = !currentSvgBlob;
   }

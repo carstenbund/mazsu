@@ -114,12 +114,23 @@ def generate_svg():
         if layer in uploaded_files and isinstance(section, dict):
             section["file"] = uploaded_files[layer]
 
+    seed_value = None
+    random_cfg = cfg.get("randomization")
+    if isinstance(random_cfg, dict) and random_cfg.get("use_fixed_seed"):
+        try:
+            seed_candidate = random_cfg.get("seed")
+            if seed_candidate is not None:
+                seed_value = int(seed_candidate)
+        except (TypeError, ValueError):
+            seed_value = None
+
     # --- Generate SVG ---
     field = SymbolicField(
         cols=(width // grid_size) + 1,
         rows=(height // grid_size) + 1,
         grid_size=grid_size,
-        config=cfg
+        config=cfg,
+        seed=seed_value
     )
 
     out_svg = os.path.join(tempfile.gettempdir(), f"output_{uuid.uuid4().hex}.svg")

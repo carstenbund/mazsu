@@ -1,3 +1,7 @@
+randomization:
+  use_fixed_seed: false
+  seed: 12345
+
 grid:
   dot_radius: 1.5
   dot_opacity: 0.7

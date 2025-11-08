@@ -5,6 +5,18 @@ let isApplyingConfig = false;
 
 const paletteList = document.getElementById("paletteList");
 const addPaletteBtn = document.getElementById("addPaletteColor");
+const seedCheckbox = document.getElementById("use_fixed_seed");
+const seedInput = document.getElementById("seed_value");
+
+function updateSeedInputState() {
+  const isFixed = seedCheckbox.checked;
+  seedInput.disabled = !isFixed;
+  if (!isFixed) {
+    seedInput.classList.remove("invalid");
+  }
+}
+
+updateSeedInputState();
 
 function normalizeColor(value) {
   if (!value) return null;
@@ -114,6 +126,11 @@ function applyConfig(config) {
     document.getElementById("grid_dot_opacity").value = gridAppearance.dot_opacity ?? "";
     document.getElementById("grid_dot_color").value = gridAppearance.dot_color ?? "";
 
+    const randomization = currentConfig.randomization || {};
+    seedCheckbox.checked = !!randomization.use_fixed_seed;
+    seedInput.value = randomization.seed ?? "";
+    updateSeedInputState();
+
     const gridLines = gridAppearance.lines || {};
     document.getElementById("grid_line_width").value = gridLines.stroke_width ?? "";
     document.getElementById("grid_line_color").value = gridLines.stroke_color ?? "";
@@ -161,6 +178,10 @@ window.addEventListener("DOMContentLoaded", loadConfig);
 
 function collectConfigFromForm() {
   return {
+    randomization: {
+      use_fixed_seed: seedCheckbox.checked,
+      seed: readNumber("seed_value", parseInt)
+    },
     grid: {
       dot_radius: readNumber("grid_dot_radius"),
       dot_opacity: readNumber("grid_dot_opacity"),
@@ -359,6 +380,11 @@ downloadBtn.addEventListener('click', downloadSVG);
 // --- Optional: re-expand config on edit ---
 document.getElementById("configForm").addEventListener("input", () => {
   configContainer.classList.remove('collapsed');
+  scheduleConfigSave();
+});
+
+seedCheckbox.addEventListener("change", () => {
+  updateSeedInputState();
   scheduleConfigSave();
 });
 

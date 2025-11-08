@@ -3,6 +3,14 @@ let saveTimeout = null;
 let pendingSavePromise = null;
 let isApplyingConfig = false;
 
+function cloneDeep(value) {
+  if (value === null || value === undefined) return value;
+  if (typeof structuredClone === "function") {
+    return structuredClone(value);
+  }
+  return JSON.parse(JSON.stringify(value));
+}
+
 const paletteList = document.getElementById("paletteList");
 const addPaletteBtn = document.getElementById("addPaletteColor");
 const seedCheckbox = document.getElementById("use_fixed_seed");
@@ -177,7 +185,8 @@ async function loadConfig() {
 window.addEventListener("DOMContentLoaded", loadConfig);
 
 function collectConfigFromForm() {
-  return {
+  const shapes = currentConfig?.heatmaps?.shapes;
+  const config = {
     randomization: {
       use_fixed_seed: seedCheckbox.checked,
       seed: readNumber("seed_value", parseInt)
@@ -222,6 +231,13 @@ function collectConfigFromForm() {
       line_opacity: readNumber("figure_line_opacity")
     }
   };
+
+  if (shapes && typeof shapes === "object") {
+    config.heatmaps = config.heatmaps || {};
+    config.heatmaps.shapes = cloneDeep(shapes);
+  }
+
+  return config;
 }
 
 async function saveConfig() {

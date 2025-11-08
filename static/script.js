@@ -64,6 +64,27 @@ const downloadBtn = document.getElementById('downloadBtn');
 let currentSvgBlob = null;
 let previewUrl = null;
 
+function openHeatmapPreview(targetId) {
+  const input = document.getElementById(targetId);
+  if (!input) return;
+
+  const value = input.value.trim();
+  if (!value) {
+    alert('Please enter a heatmap file path to preview.');
+    return;
+  }
+
+  const previewWindowUrl = `/preview_heatmap?path=${encodeURIComponent(value)}`;
+  window.open(previewWindowUrl, '_blank', 'noopener=yes,width=800,height=600');
+}
+
+document.querySelectorAll('.preview-heatmap').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const targetId = btn.getAttribute('data-target');
+    openHeatmapPreview(targetId);
+  });
+});
+
 toggleBtn.addEventListener('click', () => {
   configContainer.classList.toggle('collapsed');
 });

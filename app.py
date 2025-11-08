@@ -99,6 +99,24 @@ def generate_svg():
     return send_file(out_svg, mimetype="image/svg+xml", as_attachment=False)
 
 
+@app.route("/preview_heatmap")
+def preview_heatmap():
+    path = request.args.get("path", "")
+    if not path:
+        return "Missing path", 400
+
+    base_dir = os.path.abspath(os.getcwd())
+    abs_path = os.path.abspath(os.path.join(base_dir, path))
+
+    if not abs_path.startswith(base_dir):
+        return "Invalid path", 400
+
+    if not os.path.isfile(abs_path):
+        return "Heatmap not found", 404
+
+    return send_file(abs_path)
+
+
 @app.route("/")
 def index():
     return app.send_static_file("index.html")

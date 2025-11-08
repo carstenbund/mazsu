@@ -1,64 +1,51 @@
 randomization:
-  use_fixed_seed: false
-  seed: 12345
-
+  use_fixed_seed: true
+  seed: 123
 grid:
   dot_radius: 1.5
   dot_opacity: 0.7
-  dot_color: "#cccccc"
-
+  dot_color: '#cccccc'
   lines:
     stroke_width: 1.5
-    stroke_color: "#222222"
+    stroke_color: '#222222'
     opacity: 0.8
     center_probability: 0.4
     edge_probability: 0.05
     diagonal_bias: 0.3
     max_connections: 2
-    
-
 heatmaps:
   grid:
-    file: "maps/grid_density.png"   # optional
-    use_perlin: false               # false | true
-    mode: "add"                     # replace | add | multiply
+    file: maps/density.png
+    use_perlin: false
+    mode: add
     perlin_scale: 0.05
     perlin_octaves: 3
-
   figure:
-    file: "maps/figure_density.png"
+    file: maps/density.png
     use_perlin: false
-    mode: "add"
+    mode: multiply
     perlin_scale: 0.06
     perlin_octaves: 4
-
-    # --- Color SECTION ---
     palettes:
-      - "#E13A9D"  # Pink
-      - "#3F51B5"  # Blue
-      - "#000000"  # Black
-      - "#f59e0b"  # Orange
-    # ------------------------
-
-
+    - '#E13A9D'
+    - '#3F51B5'
+    - '#000000'
+    - '#F59E0B'
   shapes:
     standing:
-      file: "maps/standing_mask.png"
+      file: maps/standing_mask.png
       use_perlin: true
-      mode: "add"
+      mode: add
     walking:
-      file: "maps/walking_mask.png"
+      file: maps/walking_mask.png
       use_perlin: true
-      mode: "multiply"
+      mode: multiply
       perlin_scale: 0.04
       perlin_octaves: 2
-
 figures:
-  scale_factor: 0.06
+  scale_factor: 0.04
   tranparency_factor: 0.6
   amount_figures: 20
   line_thickness: 1.5
-  line_color: "#000000"
+  line_color: '#000000'
   line_opacity: 0.8
-  
-  

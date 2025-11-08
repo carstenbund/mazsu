@@ -1,5 +1,93 @@
 let currentConfig = {};
 
+const paletteList = document.getElementById("paletteList");
+const addPaletteBtn = document.getElementById("addPaletteColor");
+
+function normalizeColor(value) {
+  if (!value) return null;
+  let hex = value.trim();
+  if (!hex) return null;
+  hex = hex.startsWith("#") ? hex.slice(1) : hex;
+
+  if (/^[0-9a-fA-F]{3}$/.test(hex)) {
+    hex = hex
+      .split("")
+      .map((ch) => ch + ch)
+      .join("");
+  } else if (!/^[0-9a-fA-F]{6}$/.test(hex)) {
+    return null;
+  }
+
+  return `#${hex.toUpperCase()}`;
+}
+
+function createPaletteItem(color = "#000000") {
+  const normalized = normalizeColor(color) || "#000000";
+  const item = document.createElement("div");
+  item.className = "palette-item";
+
+  const colorInput = document.createElement("input");
+  colorInput.type = "color";
+  colorInput.value = normalized;
+
+  const textInput = document.createElement("input");
+  textInput.type = "text";
+  textInput.className = "palette-hex";
+  textInput.value = normalized;
+
+  colorInput.addEventListener("input", () => {
+    textInput.value = colorInput.value.toUpperCase();
+    textInput.classList.remove("invalid");
+  });
+
+  textInput.addEventListener("input", () => {
+    const normalizedValue = normalizeColor(textInput.value);
+    if (normalizedValue) {
+      colorInput.value = normalizedValue;
+      textInput.value = normalizedValue;
+      textInput.classList.remove("invalid");
+    } else {
+      textInput.classList.add("invalid");
+    }
+  });
+
+  const removeBtn = document.createElement("button");
+  removeBtn.type = "button";
+  removeBtn.className = "palette-remove";
+  removeBtn.textContent = "Remove";
+  removeBtn.addEventListener("click", () => {
+    item.remove();
+    if (!paletteList.querySelector(".palette-item")) {
+      createPaletteItem();
+    }
+  });
+
+  item.append(colorInput, textInput, removeBtn);
+  paletteList.appendChild(item);
+
+  return item;
+}
+
+function setPaletteColors(colors) {
+  paletteList.innerHTML = "";
+  const paletteArray = Array.isArray(colors) && colors.length ? colors : ["#000000"];
+  paletteArray.forEach((color) => {
+    createPaletteItem(color);
+  });
+}
+
+function getPaletteColors() {
+  const hexInputs = paletteList.querySelectorAll(".palette-hex");
+  const colors = [];
+  hexInputs.forEach((input) => {
+    const normalized = normalizeColor(input.value);
+    if (normalized) {
+      colors.push(normalized);
+    }
+  });
+  return colors.length ? colors : ["#000000"];
+}
+
 function readNumber(id, parser = parseFloat) {
   const raw = document.getElementById(id).value;
   if (raw === "") return undefined;
@@ -43,7 +131,7 @@ async function loadConfig() {
   document.getElementById("figure_mode").value = figure.mode;
   document.getElementById("figure_scale").value = figure.perlin_scale;
   document.getElementById("figure_octaves").value = figure.perlin_octaves;
-  document.getElementById("figure_palettes").value = figure.palettes.join(", ");
+  setPaletteColors(figure.palettes);
 
   const figureSettings = currentConfig.figures || {};
   document.getElementById("figure_scale_factor").value = figureSettings.scale_factor ?? "";
@@ -124,7 +212,7 @@ async function generate() {
         mode: document.getElementById("figure_mode").value,
         perlin_scale: parseFloat(document.getElementById("figure_scale").value),
         perlin_octaves: parseInt(document.getElementById("figure_octaves").value),
-        palettes: document.getElementById("figure_palettes").value.split(",").map(s => s.trim())
+        palettes: getPaletteColors()
       }
     },
     figures: {
@@ -186,3 +274,9 @@ downloadBtn.addEventListener('click', downloadSVG);
 document.getElementById("configForm").addEventListener("input", () => {
   configContainer.classList.remove('collapsed');
 });
+
+addPaletteBtn.addEventListener("click", () => {
+  createPaletteItem();
+});
+
+setPaletteColors([]);

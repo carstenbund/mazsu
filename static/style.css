@@ -102,6 +102,65 @@ input[type="checkbox"] {
   transform: scale(1.2);
 }
 
+.palette-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.palette-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.4em 0.6em;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #f8f8f8;
+}
+
+.palette-item input[type="color"] {
+  border: none;
+  padding: 0;
+  width: 42px;
+  height: 32px;
+  background: none;
+}
+
+.palette-hex {
+  width: 90px;
+  font-family: monospace;
+  text-transform: uppercase;
+}
+
+.palette-hex.invalid {
+  border-color: #d14343;
+  background: #ffecec;
+}
+
+.palette-item .palette-remove {
+  margin-top: 0;
+  background: #c0392b;
+  font-size: 0.75em;
+  padding: 0.35em 0.7em;
+}
+
+.palette-item .palette-remove:hover {
+  background: #962d22;
+}
+
+.palette-add {
+  align-self: flex-start;
+  margin-top: 0;
+  font-size: 0.85em;
+  padding: 0.45em 1em;
+}
+
 /* ---------- Buttons ---------- */
 button {
   margin-top: 1.2em;

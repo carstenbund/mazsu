@@ -7,6 +7,9 @@ import svgwrite
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+DEFAULT_CONFIG_PATH = "default_config.yaml"
+ACTIVE_CONFIG_PATH = "active_config.yaml"
+
 app = Flask(__name__, static_url_path='', static_folder='static')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -18,8 +21,16 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def load_yaml_file(path):
     if os.path.exists(path):
         with open(path, "r") as f:
-            return yaml.safe_load(f)
+            return yaml.safe_load(f) or {}
     return {}
+
+
+def ensure_active_config():
+    """Ensure the active config exists by seeding it from defaults if needed."""
+    if not os.path.exists(ACTIVE_CONFIG_PATH):
+        cfg = load_yaml_file(DEFAULT_CONFIG_PATH)
+        with open(ACTIVE_CONFIG_PATH, "w") as f:
+            yaml.safe_dump(cfg or {}, sort_keys=False)
 
 
 def deep_merge(a, b):
@@ -38,8 +49,31 @@ def deep_merge(a, b):
 
 @app.route("/get_config")
 def get_config():
-    cfg = load_yaml_file("default_config.yaml")
-    return jsonify(cfg)
+    ensure_active_config()
+    cfg = load_yaml_file(ACTIVE_CONFIG_PATH)
+    return jsonify(cfg or {})
+
+
+@app.route("/save_config", methods=["POST"])
+def save_config():
+    data = request.get_json(silent=True) or {}
+    cfg = data.get("config")
+    if not isinstance(cfg, dict):
+        return jsonify({"error": "Invalid config payload"}), 400
+
+    ensure_active_config()
+    with open(ACTIVE_CONFIG_PATH, "w") as f:
+        yaml.safe_dump(cfg, sort_keys=False)
+
+    return jsonify({"status": "ok"})
+
+
+@app.route("/get_defaults", methods=["POST"])
+def get_defaults():
+    cfg = load_yaml_file(DEFAULT_CONFIG_PATH)
+    with open(ACTIVE_CONFIG_PATH, "w") as f:
+        yaml.safe_dump(cfg or {}, sort_keys=False)
+    return jsonify(cfg or {})
 
 
 @app.route("/generate", methods=["POST"])
@@ -57,7 +91,8 @@ def generate_svg():
             data["config"] = {}
 
     # --- Merge with defaults ---
-    cfg = load_yaml_file("default_config.yaml")
+    ensure_active_config()
+    cfg = load_yaml_file(ACTIVE_CONFIG_PATH)
     user_cfg = data.get("config") if isinstance(data.get("config"), dict) else {}
     cfg = deep_merge(cfg, user_cfg)
 

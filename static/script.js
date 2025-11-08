@@ -1,4 +1,7 @@
 let currentConfig = {};
+let saveTimeout = null;
+let pendingSavePromise = null;
+let isApplyingConfig = false;
 
 const paletteList = document.getElementById("paletteList");
 const addPaletteBtn = document.getElementById("addPaletteColor");
@@ -60,6 +63,7 @@ function createPaletteItem(color = "#000000") {
     if (!paletteList.querySelector(".palette-item")) {
       createPaletteItem();
     }
+    scheduleConfigSave();
   });
 
   item.append(colorInput, textInput, removeBtn);
@@ -100,49 +104,169 @@ function readText(id) {
   return value === "" ? undefined : value;
 }
 
+function applyConfig(config) {
+  isApplyingConfig = true;
+  try {
+    currentConfig = config || {};
+
+    const gridAppearance = currentConfig.grid || {};
+    document.getElementById("grid_dot_radius").value = gridAppearance.dot_radius ?? "";
+    document.getElementById("grid_dot_opacity").value = gridAppearance.dot_opacity ?? "";
+    document.getElementById("grid_dot_color").value = gridAppearance.dot_color ?? "";
+
+    const gridLines = gridAppearance.lines || {};
+    document.getElementById("grid_line_width").value = gridLines.stroke_width ?? "";
+    document.getElementById("grid_line_color").value = gridLines.stroke_color ?? "";
+    document.getElementById("grid_line_opacity").value = gridLines.opacity ?? "";
+    document.getElementById("grid_line_center_probability").value = gridLines.center_probability ?? "";
+    document.getElementById("grid_line_edge_probability").value = gridLines.edge_probability ?? "";
+    document.getElementById("grid_line_diagonal_bias").value = gridLines.diagonal_bias ?? "";
+    document.getElementById("grid_line_max_connections").value = gridLines.max_connections ?? "";
+
+    const heatmaps = currentConfig.heatmaps || {};
+    const gridHeatmap = heatmaps.grid || {};
+    document.getElementById("grid_file").value = gridHeatmap.file ?? "";
+    document.getElementById("grid_use_perlin").checked = !!gridHeatmap.use_perlin;
+    document.getElementById("grid_mode").value = gridHeatmap.mode || "add";
+    document.getElementById("grid_scale").value = gridHeatmap.perlin_scale ?? "";
+    document.getElementById("grid_octaves").value = gridHeatmap.perlin_octaves ?? "";
+
+    const figureHeatmap = heatmaps.figure || {};
+    document.getElementById("figure_file").value = figureHeatmap.file ?? "";
+    document.getElementById("figure_use_perlin").checked = !!figureHeatmap.use_perlin;
+    document.getElementById("figure_mode").value = figureHeatmap.mode || "add";
+    document.getElementById("figure_scale").value = figureHeatmap.perlin_scale ?? "";
+    document.getElementById("figure_octaves").value = figureHeatmap.perlin_octaves ?? "";
+    setPaletteColors(figureHeatmap.palettes);
+
+    const figureSettings = currentConfig.figures || {};
+    document.getElementById("figure_scale_factor").value = figureSettings.scale_factor ?? "";
+    document.getElementById("figure_amount").value = figureSettings.amount_figures ?? "";
+    document.getElementById("figure_transparency").value = figureSettings.tranparency_factor ?? "";
+    document.getElementById("figure_line_thickness").value = figureSettings.line_thickness ?? "";
+    document.getElementById("figure_line_color").value = figureSettings.line_color ?? "";
+    document.getElementById("figure_line_opacity").value = figureSettings.line_opacity ?? "";
+  } finally {
+    isApplyingConfig = false;
+  }
+}
+
 async function loadConfig() {
   const res = await fetch("/get_config");
-  currentConfig = await res.json();
-
-  const gridAppearance = currentConfig.grid || {};
-  document.getElementById("grid_dot_radius").value = gridAppearance.dot_radius ?? "";
-  document.getElementById("grid_dot_opacity").value = gridAppearance.dot_opacity ?? "";
-  document.getElementById("grid_dot_color").value = gridAppearance.dot_color ?? "";
-
-  const gridLines = gridAppearance.lines || {};
-  document.getElementById("grid_line_width").value = gridLines.stroke_width ?? "";
-  document.getElementById("grid_line_color").value = gridLines.stroke_color ?? "";
-  document.getElementById("grid_line_opacity").value = gridLines.opacity ?? "";
-  document.getElementById("grid_line_center_probability").value = gridLines.center_probability ?? "";
-  document.getElementById("grid_line_edge_probability").value = gridLines.edge_probability ?? "";
-  document.getElementById("grid_line_diagonal_bias").value = gridLines.diagonal_bias ?? "";
-  document.getElementById("grid_line_max_connections").value = gridLines.max_connections ?? "";
-
-  const grid = currentConfig.heatmaps.grid;
-  document.getElementById("grid_file").value = grid.file || "";
-  document.getElementById("grid_use_perlin").checked = grid.use_perlin;
-  document.getElementById("grid_mode").value = grid.mode;
-  document.getElementById("grid_scale").value = grid.perlin_scale;
-  document.getElementById("grid_octaves").value = grid.perlin_octaves;
-
-  const figure = currentConfig.heatmaps.figure;
-  document.getElementById("figure_file").value = figure.file || "";
-  document.getElementById("figure_use_perlin").checked = figure.use_perlin;
-  document.getElementById("figure_mode").value = figure.mode;
-  document.getElementById("figure_scale").value = figure.perlin_scale;
-  document.getElementById("figure_octaves").value = figure.perlin_octaves;
-  setPaletteColors(figure.palettes);
-
-  const figureSettings = currentConfig.figures || {};
-  document.getElementById("figure_scale_factor").value = figureSettings.scale_factor ?? "";
-  document.getElementById("figure_amount").value = figureSettings.amount_figures ?? "";
-  document.getElementById("figure_transparency").value = figureSettings.tranparency_factor ?? "";
-  document.getElementById("figure_line_thickness").value = figureSettings.line_thickness ?? "";
-  document.getElementById("figure_line_color").value = figureSettings.line_color ?? "";
-  document.getElementById("figure_line_opacity").value = figureSettings.line_opacity ?? "";
+  const cfg = await res.json();
+  applyConfig(cfg);
 }
 
 window.addEventListener("DOMContentLoaded", loadConfig);
+
+function collectConfigFromForm() {
+  return {
+    grid: {
+      dot_radius: readNumber("grid_dot_radius"),
+      dot_opacity: readNumber("grid_dot_opacity"),
+      dot_color: readText("grid_dot_color"),
+      lines: {
+        stroke_width: readNumber("grid_line_width"),
+        stroke_color: readText("grid_line_color"),
+        opacity: readNumber("grid_line_opacity"),
+        center_probability: readNumber("grid_line_center_probability"),
+        edge_probability: readNumber("grid_line_edge_probability"),
+        diagonal_bias: readNumber("grid_line_diagonal_bias"),
+        max_connections: readNumber("grid_line_max_connections", parseInt)
+      }
+    },
+    heatmaps: {
+      grid: {
+        file: readText("grid_file"),
+        use_perlin: document.getElementById("grid_use_perlin").checked,
+        mode: document.getElementById("grid_mode").value,
+        perlin_scale: readNumber("grid_scale"),
+        perlin_octaves: readNumber("grid_octaves", parseInt)
+      },
+      figure: {
+        file: readText("figure_file"),
+        use_perlin: document.getElementById("figure_use_perlin").checked,
+        mode: document.getElementById("figure_mode").value,
+        perlin_scale: readNumber("figure_scale"),
+        perlin_octaves: readNumber("figure_octaves", parseInt),
+        palettes: getPaletteColors()
+      }
+    },
+    figures: {
+      scale_factor: readNumber("figure_scale_factor"),
+      amount_figures: readNumber("figure_amount", parseInt),
+      tranparency_factor: readNumber("figure_transparency"),
+      line_thickness: readNumber("figure_line_thickness"),
+      line_color: readText("figure_line_color"),
+      line_opacity: readNumber("figure_line_opacity")
+    }
+  };
+}
+
+async function saveConfig() {
+  const config = collectConfigFromForm();
+  currentConfig = config;
+  try {
+    const response = await fetch("/save_config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ config })
+    });
+    if (!response.ok) {
+      throw new Error("Failed to save config");
+    }
+  } catch (err) {
+    console.error(err);
+  }
+  return config;
+}
+
+function scheduleConfigSave() {
+  if (isApplyingConfig) return;
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+  }
+  saveTimeout = setTimeout(() => {
+    saveTimeout = null;
+    pendingSavePromise = saveConfig().finally(() => {
+      pendingSavePromise = null;
+    });
+  }, 400);
+}
+
+async function flushPendingSave() {
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+    saveTimeout = null;
+    pendingSavePromise = saveConfig().finally(() => {
+      pendingSavePromise = null;
+    });
+  }
+  if (pendingSavePromise) {
+    await pendingSavePromise;
+  }
+}
+
+async function loadDefaults() {
+  try {
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+      saveTimeout = null;
+    }
+    if (pendingSavePromise) {
+      await pendingSavePromise;
+    }
+    const response = await fetch("/get_defaults", { method: "POST" });
+    if (!response.ok) {
+      throw new Error("Failed to load defaults");
+    }
+    const cfg = await response.json();
+    applyConfig(cfg);
+  } catch (err) {
+    console.error(err);
+    alert("Unable to load defaults");
+  }
+}
 
 // --- Toggle / collapse setup ---
 const toggleBtn = document.getElementById('toggleConfig');
@@ -183,47 +307,9 @@ async function generate() {
   configContainer.classList.add('collapsed');
   downloadBtn.disabled = true;
 
-  const cfg = {
-    grid: {
-      dot_radius: readNumber("grid_dot_radius"),
-      dot_opacity: readNumber("grid_dot_opacity"),
-      dot_color: readText("grid_dot_color"),
-      lines: {
-        stroke_width: readNumber("grid_line_width"),
-        stroke_color: readText("grid_line_color"),
-        opacity: readNumber("grid_line_opacity"),
-        center_probability: readNumber("grid_line_center_probability"),
-        edge_probability: readNumber("grid_line_edge_probability"),
-        diagonal_bias: readNumber("grid_line_diagonal_bias"),
-        max_connections: readNumber("grid_line_max_connections", parseInt)
-      }
-    },
-    heatmaps: {
-      grid: {
-        file: document.getElementById("grid_file").value,
-        use_perlin: document.getElementById("grid_use_perlin").checked,
-        mode: document.getElementById("grid_mode").value,
-        perlin_scale: parseFloat(document.getElementById("grid_scale").value),
-        perlin_octaves: parseInt(document.getElementById("grid_octaves").value)
-      },
-      figure: {
-        file: document.getElementById("figure_file").value,
-        use_perlin: document.getElementById("figure_use_perlin").checked,
-        mode: document.getElementById("figure_mode").value,
-        perlin_scale: parseFloat(document.getElementById("figure_scale").value),
-        perlin_octaves: parseInt(document.getElementById("figure_octaves").value),
-        palettes: getPaletteColors()
-      }
-    },
-    figures: {
-      scale_factor: readNumber("figure_scale_factor"),
-      amount_figures: readNumber("figure_amount", parseInt),
-      tranparency_factor: readNumber("figure_transparency"),
-      line_thickness: readNumber("figure_line_thickness"),
-      line_color: readText("figure_line_color"),
-      line_opacity: readNumber("figure_line_opacity")
-    }
-  };
+  await flushPendingSave();
+
+  const cfg = collectConfigFromForm();
 
   const formData = new FormData();
   formData.append("config", JSON.stringify(cfg));
@@ -273,10 +359,12 @@ downloadBtn.addEventListener('click', downloadSVG);
 // --- Optional: re-expand config on edit ---
 document.getElementById("configForm").addEventListener("input", () => {
   configContainer.classList.remove('collapsed');
+  scheduleConfigSave();
 });
 
 addPaletteBtn.addEventListener("click", () => {
   createPaletteItem();
+  scheduleConfigSave();
 });
 
-setPaletteColors([]);
+document.getElementById("getDefaultsBtn")?.addEventListener("click", loadDefaults);

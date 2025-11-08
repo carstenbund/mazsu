@@ -62,8 +62,14 @@ def save_config():
         return jsonify({"error": "Invalid config payload"}), 400
 
     ensure_active_config()
+    existing_cfg = load_yaml_file(ACTIVE_CONFIG_PATH)
+    if not isinstance(existing_cfg, dict):
+        existing_cfg = {}
+
+    merged_cfg = deep_merge(existing_cfg, cfg)
+
     with open(ACTIVE_CONFIG_PATH, "w") as f:
-        yaml.safe_dump(cfg, sort_keys=False)
+        yaml.safe_dump(merged_cfg, sort_keys=False)
 
     return jsonify({"status": "ok"})
 

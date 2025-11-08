@@ -405,8 +405,39 @@ def add_figures(
         min_y = min(p[1] for p in pts)
         pts = [(x - min_x, y - min_y) for x, y in pts]
 
-        # Apply scaling and offset
+        # Apply scaling and the initially requested offset.  This "optimal" position
+        # (decided earlier by the probability field) is kept intact before we worry
+        # about nudging the outline onto the dot grid.
         pts = [(x * figure_scale + ox, y * figure_scale + oy) for x, y in pts]
+
+        # Once we know where the figure actually landed we can gently snap its outer
+        # boundary to the nearest grid dot.  Doing this after the optimal placement
+        # has been calculated means we only introduce a minimal adjustment while the
+        # outline still aligns perfectly with the grid.
+        min_px = min(x for x, _ in pts)
+        max_px = max(x for x, _ in pts)
+        min_py = min(y for _, y in pts)
+        max_py = max(y for _, y in pts)
+
+        bbox_width = max_px - min_px
+        bbox_height = max_py - min_py
+
+        def snap_min(value):
+            return round(value / grid_size) * grid_size
+
+        snapped_min_x = snap_min(min_px)
+        snapped_min_y = snap_min(min_py)
+
+        max_origin_x = max(0, width - bbox_width)
+        max_origin_y = max(0, height - bbox_height)
+
+        snapped_min_x = min(max(snapped_min_x, 0), max_origin_x)
+        snapped_min_y = min(max(snapped_min_y, 0), max_origin_y)
+
+        dx = snapped_min_x - min_px
+        dy = snapped_min_y - min_py
+
+        pts = [(x + dx, y + dy) for x, y in pts]
         
         # --- APPLY RANDOM COLOR ---
         color = random.choice(palettes)

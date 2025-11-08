@@ -34,70 +34,57 @@ The project is ready to run on the [Koyeb](https://www.koyeb.com/) serverless pl
 
 Once the deployment finishes building, the application will be available at `<YOUR_APP_NAME>-<YOUR_ORG_NAME>.koyeb.app`.
 
-## Configuration surface
+## Configuring the generator in the web app
 
-Configuration is loaded from `default_config.yaml` and deep-merged with any JSON provided under the `config` key of the `/generate` request.  You can pass overrides either as JSON in a POST body or by stringifying a JSON object inside `FormData` (which is what the web UI does).
+Mazsu now persists your tweaks directly from the UI.  When the page loads it reads `active_config.yaml` (created on first run from `default_config.yaml`), fills the form controls, and automatically saves any edits back to `active_config.yaml`.  Generations pull from those saved values unless you explicitly override them in the current request.
 
-### Request parameters
+### Global settings
 
-| Field | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `grid_size` | integer | `10` | Determines pixel spacing between grid points (also influences figure scale).
-| `width` | integer | `1000` | Output SVG width in pixels.
-| `height` | integer | `1000` | Output SVG height in pixels.
-| `config` | JSON object | see below | Heatmap and figure options, merged with `default_config.yaml`.
-| file uploads keyed by layer name (e.g. `grid`, `figure`) | file | — | Uploaded grayscale images replace the `file` path for the matching heatmap layer for this request.
+The **Global Settings** section controls the SVG canvas:
 
-### Grid appearance (`config.grid`)
+- **Grid Size** – spacing between grid points (also influences figure scale).
+- **Width / Height** – output dimensions in pixels.
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `dot_radius` | float | `1.5` | Controls the radius of each background dot.
-| `dot_opacity` | float | `0.7` | Sets the opacity of dots (clamped in the UI between 0–1).
-| `dot_color` | string | `#cccccc` | Fill colour applied to each dot.
-| `lines.stroke_width` | float | `1.5` | Stroke width for the connective grid lines.
-| `lines.stroke_color` | string | `#222222` | Stroke colour for the lines.
-| `lines.opacity` | float | `0.8` | Opacity applied to the line strokes.
-| `lines.center_probability` | float | `0.4` | Base probability of drawing a line near the centre of the canvas.
-| `lines.edge_probability` | float | `0.05` | Line probability at the edges of the canvas.
-| `lines.diagonal_bias` | float | `0.3` | Multiplier applied when considering diagonal connections.
-| `lines.max_connections` | int | `2` | Caps how many connections any grid node may emit.
+These values are sent alongside the configuration JSON whenever you click **Generate SVG**.
 
-### Heatmap configuration (`config.heatmaps`)
+### Heatmap controls
 
-Each heatmap layer supports both image-driven and Perlin-noise-driven density maps.  Modes control how the two sources blend.
+Both the grid and figure layers expose the same knobs:
 
-| Layer | Option | Type | Default | Description |
-| --- | --- | --- | --- | --- |
-| `grid` / `figure` | `file` | string | Path from `default_config.yaml` | Grayscale image used as a probability map (black = 0, white = 1).
-| | `use_perlin` | boolean | `false` | Whether to multiply in a Perlin noise field.
-| | `mode` | enum (`replace`, `add`, `multiply`) | `add` | Blend mode used when combining image and Perlin noise.
-| | `perlin_scale` | float | `0.05` (`grid`), `0.06` (`figure`) | Spatial frequency used when generating Perlin noise.
-| | `perlin_octaves` | integer | `3` (`grid`), `4` (`figure`) | Number of octaves for Perlin noise detail.
-| `figure` only | `palettes` | list[str] | `[#E13A9D, #3F51B5, #000000, #f59e0b]` | Colors randomly sampled when drawing figure polygons.
+- **File** – a grayscale image path relative to the project root.  Use the **Preview** button to open the map in a new tab.
+- **Use Perlin** – toggles whether Perlin noise is blended into the layer.
+- **Mode** – chooses how the image and noise combine (`replace`, `add`, or `multiply`).
+- **Perlin Scale / Octaves** – adjust the noise frequency and detail level.
 
-#### Shape-specific heatmaps (`config.heatmaps.shapes`)
+The figure layer additionally offers a palette editor.  You can add or remove colours, edit them as hex codes, or use the colour picker inputs; the list is saved with the rest of the config.
 
-Any key added under `heatmaps.shapes` maps to a specific pose filename (e.g., `pose_standing.svg`).  Each entry supports:
+### Grid appearance
 
-- `file`: grayscale probability map
-- `use_perlin`: boolean toggle
-- `mode`: blend mode
-- `perlin_scale`: float (optional; defaults to `0.05` if omitted)
-- `perlin_octaves`: integer (optional; defaults to `3`)
+The **Grid Appearance** section lets you refine the dot layer and connective lines without touching YAML:
 
-These maps override the general `figure` layer whenever a matching pose is being placed.
+- Dot radius, opacity, and colour.
+- Line stroke width, colour, opacity.
+- Line placement probabilities for the centre vs. edges, a diagonal bias, and the maximum connections per node.
 
-### Figure settings (`config.figures`)
+### Figure rendering
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `scale_factor` | float | `0.06` | Multiplied by `grid_size` to set pose polygon scale.
-| `amount_figures` | int | `20` | Target number of silhouettes to place (the algorithm will make several attempts to hit this count).
-| `tranparency_factor` | float | `0.8` | Opacity applied to the polygon fills (typo preserved for compatibility).
-| `line_thickness` | float | `1.5` | Outline stroke width for the polygons; set to `0` for no outline.
-| `line_color` | string | `#000000` | Stroke colour for the outlines.
-| `line_opacity` | float | `0.8` | Stroke opacity for outlines.
+Figure-specific sliders match the options in `config.figures`:
+
+- Scale factor used to size pose silhouettes relative to the grid.
+- Target count of figures to place.
+- Fill transparency (typo `tranparency_factor` preserved in config).
+- Outline stroke thickness, colour, and opacity.
+
+### Saving and defaults
+
+The form auto-saves after short inactivity.  Use **Get Defaults** to restore `default_config.yaml` into `active_config.yaml` if you want a clean slate.
+
+### Advanced / not yet implemented controls
+
+Some options remain editable only by hand in `default_config.yaml` / `active_config.yaml` or the Python source:
+
+- **Shape-specific heatmaps** under `heatmaps.shapes` (per-pose masks and noise blends) – not yet surfaced in the UI.
+- **Generator internals** such as extra placement attempts, occupancy padding, and Perlin normalization – still hard-coded in `generator.py` (see the next section).
 
 ## Fixed behavioural parameters
 

@@ -2,6 +2,7 @@ let currentConfig = {};
 let saveTimeout = null;
 let pendingSavePromise = null;
 let isApplyingConfig = false;
+let availableMaps = [];
 
 function cloneDeep(value) {
   if (value === null || value === undefined) return value;
@@ -15,6 +16,18 @@ const paletteList = document.getElementById("paletteList");
 const addPaletteBtn = document.getElementById("addPaletteColor");
 const seedCheckbox = document.getElementById("use_fixed_seed");
 const seedInput = document.getElementById("seed_value");
+const heatmapControls = {
+  grid: {
+    select: document.getElementById("grid_file_select"),
+    input: document.getElementById("grid_file"),
+    upload: document.getElementById("grid_file_upload"),
+  },
+  figure: {
+    select: document.getElementById("figure_file_select"),
+    input: document.getElementById("figure_file"),
+    upload: document.getElementById("figure_file_upload"),
+  },
+};
 
 function updateSeedInputState() {
   const isFixed = seedCheckbox.checked;
@@ -25,6 +38,105 @@ function updateSeedInputState() {
 }
 
 updateSeedInputState();
+
+function syncSelectWithInput(prefix) {
+  const controls = heatmapControls[prefix];
+  if (!controls || !controls.select || !controls.input) return;
+  const value = controls.input.value.trim();
+  const options = Array.from(controls.select.options || []);
+  let hasOption = options.some((opt) => opt.value === value);
+  if (value && !hasOption) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    controls.select.appendChild(option);
+    hasOption = true;
+  }
+  controls.select.value = value && hasOption ? value : "";
+}
+
+function refreshHeatmapSelectOptions() {
+  Object.entries(heatmapControls).forEach(([prefix, controls]) => {
+    if (!controls.select) return;
+    const select = controls.select;
+    const currentValue = controls.input ? controls.input.value.trim() : "";
+    select.innerHTML = "";
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a map";
+    select.appendChild(placeholder);
+
+    availableMaps.forEach((map) => {
+      const option = document.createElement("option");
+      option.value = map.path;
+      option.textContent = map.name || map.path;
+      select.appendChild(option);
+    });
+
+    if (currentValue) {
+      syncSelectWithInput(prefix);
+    } else {
+      select.value = "";
+    }
+  });
+}
+
+async function fetchMapOptions() {
+  try {
+    const response = await fetch("/maps");
+    if (!response.ok) {
+      throw new Error("Failed to load maps");
+    }
+    const payload = await response.json();
+    if (payload && Array.isArray(payload.maps)) {
+      availableMaps = payload.maps;
+    } else {
+      availableMaps = [];
+    }
+  } catch (err) {
+    console.error(err);
+    availableMaps = [];
+  }
+  refreshHeatmapSelectOptions();
+}
+
+async function handleMapUpload(prefix) {
+  const controls = heatmapControls[prefix];
+  if (!controls || !controls.upload) return;
+  const fileInput = controls.upload;
+  if (!fileInput.files || !fileInput.files.length) {
+    alert("Please choose an image to upload.");
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const formData = new FormData();
+  formData.append("map", file);
+
+  try {
+    const response = await fetch("/upload_map", {
+      method: "POST",
+      body: formData,
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload?.error || "Failed to upload map");
+    }
+
+    fileInput.value = "";
+    await fetchMapOptions();
+
+    if (controls.input) {
+      controls.input.value = payload.path || "";
+      syncSelectWithInput(prefix);
+      scheduleConfigSave();
+    }
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Unable to upload map");
+  }
+}
 
 function normalizeColor(value) {
   if (!value) return null;
@@ -155,6 +267,7 @@ function applyConfig(config) {
     document.getElementById("grid_mode").value = gridHeatmap.mode || "add";
     document.getElementById("grid_scale").value = gridHeatmap.perlin_scale ?? "";
     document.getElementById("grid_octaves").value = gridHeatmap.perlin_octaves ?? "";
+    syncSelectWithInput("grid");
 
     const figureHeatmap = heatmaps.figure || {};
     document.getElementById("figure_file").value = figureHeatmap.file ?? "";
@@ -163,6 +276,7 @@ function applyConfig(config) {
     document.getElementById("figure_scale").value = figureHeatmap.perlin_scale ?? "";
     document.getElementById("figure_octaves").value = figureHeatmap.perlin_octaves ?? "";
     setPaletteColors(figureHeatmap.palettes);
+    syncSelectWithInput("figure");
 
     const figureSettings = currentConfig.figures || {};
     document.getElementById("figure_scale_factor").value = figureSettings.scale_factor ?? "";
@@ -182,7 +296,10 @@ async function loadConfig() {
   applyConfig(cfg);
 }
 
-window.addEventListener("DOMContentLoaded", loadConfig);
+window.addEventListener("DOMContentLoaded", async () => {
+  await fetchMapOptions();
+  await loadConfig();
+});
 
 function collectConfigFromForm() {
   const shapes = currentConfig?.heatmaps?.shapes;
@@ -439,6 +556,28 @@ document.querySelectorAll('.preview-heatmap').forEach(btn => {
     const targetId = btn.getAttribute('data-target');
     openHeatmapPreview(targetId);
   });
+});
+
+document.querySelectorAll('.heatmap-upload').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const prefix = btn.getAttribute('data-target');
+    handleMapUpload(prefix);
+  });
+});
+
+Object.entries(heatmapControls).forEach(([prefix, controls]) => {
+  if (controls.select) {
+    controls.select.addEventListener('change', () => {
+      if (!controls.input) return;
+      controls.input.value = controls.select.value;
+      scheduleConfigSave();
+    });
+  }
+  if (controls.input) {
+    controls.input.addEventListener('input', () => {
+      syncSelectWithInput(prefix);
+    });
+  }
 });
 
 toggleBtn.addEventListener('click', () => {

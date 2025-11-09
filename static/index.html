@@ -81,8 +81,16 @@
         <h2>Heatmaps – Grid</h2>
         <div class="flex-row wrap">
           <div class="field heatmap-field">
-            <label>File</label><input type="text" id="grid_file">
-            <button type="button" class="preview-heatmap" data-target="grid_file">Preview</button>
+            <label for="grid_file_select">File</label>
+            <div class="heatmap-source-row">
+              <select id="grid_file_select" aria-label="Choose an existing grid map"></select>
+              <input type="text" id="grid_file" placeholder="maps/grid_density.png">
+            </div>
+            <div class="heatmap-action-row">
+              <input type="file" id="grid_file_upload" accept="image/*">
+              <button type="button" class="heatmap-upload" data-target="grid">Upload</button>
+              <button type="button" class="preview-heatmap" data-target="grid_file">Preview</button>
+            </div>
             <label class="check"><input type="checkbox" id="grid_use_perlin"> Use Perlin</label>
           </div>
           <div class="field">
@@ -154,8 +162,16 @@
         <h2>Heatmaps – Figure</h2>
         <div class="flex-row wrap">
           <div class="field heatmap-field">
-            <label>File</label><input type="text" id="figure_file">
-            <button type="button" class="preview-heatmap" data-target="figure_file">Preview</button>
+            <label for="figure_file_select">File</label>
+            <div class="heatmap-source-row">
+              <select id="figure_file_select" aria-label="Choose an existing figure map"></select>
+              <input type="text" id="figure_file" placeholder="maps/figure_density.png">
+            </div>
+            <div class="heatmap-action-row">
+              <input type="file" id="figure_file_upload" accept="image/*">
+              <button type="button" class="heatmap-upload" data-target="figure">Upload</button>
+              <button type="button" class="preview-heatmap" data-target="figure_file">Preview</button>
+            </div>
             <label class="check"><input type="checkbox" id="figure_use_perlin"> Use Perlin</label>
           </div>
           <div class="field">
@@ -220,6 +236,7 @@
 </div>
 
 <h2>Preview:</h2>
+
 <div id="previewContainer" aria-live="polite"></div>
 
 <script src="script.js"></script>

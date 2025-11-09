@@ -33,6 +33,21 @@
   .flex-row { display: flex; flex-wrap: wrap; gap: 1em; }
   .field { display: flex; flex-direction: column; }
   .action-buttons { margin-top: 1em; display: flex; gap: 0.5em; }
+
+  #previewContainer {
+    width: 1000px;
+    min-height: 1200px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 0.5rem;
+    background: #fff;
+  }
+
+  #previewContainer svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
 </style>
 </head>
 <body>
@@ -221,7 +236,8 @@
 </div>
 
 <h2>Preview:</h2>
-<iframe id="preview" width="720" height="720"></iframe>
+
+<div id="previewContainer" aria-live="polite"></div>
 
 <script src="script.js"></script>
 </body>

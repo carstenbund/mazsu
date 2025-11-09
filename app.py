@@ -1,11 +1,28 @@
 from flask import Flask, render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
 import os, tempfile, uuid, yaml, json
+from pathlib import Path
+from PIL import Image, ImageOps
 from generator import SymbolicField, add_grid_dots, add_random_lines, add_figures, load_config
 import svgwrite
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+MAPS_DIR = Path("maps")
+MAPS_DIR.mkdir(parents=True, exist_ok=True)
+
+ALLOWED_IMAGE_EXTENSIONS = {
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".bmp",
+    ".gif",
+    ".tif",
+    ".tiff",
+    ".webp",
+    ".avif",
+}
 
 DEFAULT_CONFIG_PATH = "default_config.yaml"
 ACTIVE_CONFIG_PATH = "active_config.yaml"
@@ -87,6 +104,68 @@ def get_config():
     ensure_active_config()
     cfg = load_yaml_file(ACTIVE_CONFIG_PATH)
     return jsonify(cfg or {})
+
+
+@app.route("/maps", methods=["GET"])
+def list_maps():
+    MAPS_DIR.mkdir(parents=True, exist_ok=True)
+    maps = []
+    for file_path in MAPS_DIR.iterdir():
+        if not file_path.is_file():
+            continue
+        if file_path.suffix.lower() not in ALLOWED_IMAGE_EXTENSIONS:
+            continue
+        try:
+            rel_path = file_path.relative_to(Path.cwd())
+        except ValueError:
+            rel_path = file_path
+        label = file_path.stem.replace("_", " ").strip() or file_path.stem
+        maps.append(
+            {
+                "name": label.title(),
+                "path": str(rel_path).replace(os.sep, "/"),
+            }
+        )
+    maps.sort(key=lambda item: item["name"].lower())
+    return jsonify({"maps": maps})
+
+
+@app.route("/upload_map", methods=["POST"])
+def upload_map():
+    if "map" not in request.files:
+        return jsonify({"error": "No map file provided"}), 400
+
+    file = request.files["map"]
+    if file is None or file.filename == "":
+        return jsonify({"error": "No map file provided"}), 400
+
+    desired_name = request.form.get("name", "").strip()
+    base_name = secure_filename(desired_name) or secure_filename(Path(file.filename).stem)
+    if not base_name:
+        base_name = f"map_{uuid.uuid4().hex[:8]}"
+
+    output_name = f"{base_name}_{uuid.uuid4().hex[:8]}.png"
+    output_path = MAPS_DIR / output_name
+
+    try:
+        with Image.open(file.stream) as img:
+            img = ImageOps.exif_transpose(img)
+            img = img.convert("L")
+            img = ImageOps.autocontrast(img)
+            img.save(output_path, format="PNG")
+    except Exception as exc:
+        if output_path.exists():
+            output_path.unlink(missing_ok=True)
+        return jsonify({"error": f"Failed to process map: {exc}"}), 400
+
+    rel_path = output_path.relative_to(Path.cwd()) if output_path.is_absolute() else output_path
+    rel_path_str = str(rel_path).replace(os.sep, "/")
+
+    return jsonify({
+        "status": "ok",
+        "path": rel_path_str,
+        "name": output_path.stem.replace("_", " ").title(),
+    })
 
 
 @app.route("/save_config", methods=["POST"])

@@ -59,9 +59,13 @@ class SymbolicField:
             return None
         
         try:
-            img = Image.open(path).convert("L").resize((self.cols, self.rows), Image.Resampling.LANCZOS)
-            # Black (0) = 0.0, White (255) = 1.0
-            return np.array(img, dtype=np.float32) / 255.0
+            with Image.open(path) as img:
+                img = ImageOps.exif_transpose(img)
+                img = img.convert("L")
+                img = ImageOps.autocontrast(img)
+                img = img.resize((self.cols, self.rows), Image.Resampling.LANCZOS)
+                # Black (0) = 0.0, White (255) = 1.0
+                return np.array(img, dtype=np.float32) / 255.0
         except Exception as e:
             print(f"Error loading image {path}: {e}")
             return None
